@@ -558,6 +558,27 @@ extension Game {
     }
     
     
+    public static func listOfFile() -> [String]? {
+        do {
+            // Get the document directory url
+            let documentDirectory = try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+            let folderDirectory = documentDirectory.appendingPathComponent(folderName)
+            
+            // Get the directory contents urls (including subfolders urls)
+            let directoryContents = try FileManager.default.contentsOfDirectory(at: folderDirectory, includingPropertiesForKeys: nil)
+            
+            Swift.print("Folder path : \(folderDirectory)")
+
+            let json = directoryContents.filter(\.isJSON).map { $0.localizedName ?? $0.lastPathComponent }
+            
+            return json
+        } catch {
+            Swift.print(error)
+        }
+        
+        return nil
+    }
+    
     /// Computes the solution of a given ``Game``
     ///
     /// The game is updated with the first solution found. If there are
