@@ -328,6 +328,14 @@ extension Game {
 }
 
 extension Game: Equatable {
+    /// Returns a Boolean value indicating whether two values are equal.
+    ///
+    /// Equality is the inverse of inequality. For any values `a` and `b`,
+    /// `a == b` implies that `a != b` is `false`.
+    ///
+    /// - Parameters:
+    ///   - lhs: A value to compare.
+    ///   - rhs: Another value to compare.
     public static func == (lhs: Game, rhs: Game) -> Bool {
         return lhs.game == rhs.game
     }
@@ -466,7 +474,7 @@ extension Game {
 
 extension Game {
     
-    /// Creates a game by loading its description from a text file.
+    /// Creates a game by loading its description from a json file.
     ///
     /// - Parameter filename: Input file (with no extension).
     /// - Returns: The loaded ``Game`` instance.
@@ -495,6 +503,22 @@ extension Game {
         catch {
             fatalError(error.localizedDescription)
         }
+    }
+    
+    /// Creates a game by loading its description from a json file.
+    /// 
+    /// - Parameters:
+    ///   - bundel: The Bundel to refer
+    ///   - filename: Input file.
+    ///   - ext: File extension
+    /// - Returns: The loaded ``Game`` instance.
+    public static func load(from bundel: Bundle, _ filename: String, withExtension ext: String?) -> Game {
+        let format = bundel.decode(JSONFormat.self, from: filename, withExtension: ext)
+        
+        var game = self.init(format)
+        game.updateFlags()
+        
+        return game
     }
     
     /// Saves a game in a json file.
@@ -533,12 +557,13 @@ extension Game {
         }
     }
     
-    @discardableResult
+    
     /// Computes the solution of a given ``Game``
     ///
     /// The game is updated with the first solution found. If there are
     /// no solution for this game, must be unchanged.
     /// - Returns: true of a solution is found, otherwise false.
+    @discardableResult
     public mutating func solve() -> Bool {
         var nbSolution: UInt = 0
         var finish = false
@@ -645,6 +670,12 @@ extension Game {
         return true
     }
     
+    /// Test if a given square is inside the board.
+    ///
+    /// - Parameters:
+    ///   - row: Row index
+    ///   - col: Column index
+    /// - Returns: true if inside, otherwise false.
     private func _inside(_ row: Int, _ col: Int) -> Bool {
         var i = row
         var j = col
@@ -658,10 +689,28 @@ extension Game {
         return true
     }
     
+    /// Test if the neighbour of a given square is inside the board.
+    ///
+    /// - Parameters:
+    ///   - row: Row index
+    ///   - col: Column index
+    ///   - dir: The direction in wich to consider the neighbour.
+    /// - Returns: true if inside, otherwise false.
     private func _insideNeigh(_ row: Int, _ col: Int, _ dir: GameDirection) -> Bool {
         return _inside(row + dir.iOffset, col + dir.jOffset)
     }
     
+    /// Compute the next square coordinates in a given direction.
+    ///
+    /// If the next coordinates are out of board (return false), the
+    /// coordinates of current square (*pi,*pj) are not updated. If the wrapping
+    /// option is enabled, this function always returns true.
+    ///
+    /// - Parameters:
+    ///   - pi: Address of current row index to be updated.
+    ///   - pj: Address of current column index to be updated
+    ///   - dir: The direction to consider.
+    /// - Returns: true if the next cooardinate are inside the board, otherwise false.
     private func _next(_ pi: inout Int, _ pj: inout Int, _ dir: GameDirection) -> Bool {
         var i = pi
         var j = pj
@@ -682,6 +731,14 @@ extension Game {
         return true
     }
     
+    /// Test if a square has a given value.
+    ///
+    /// - Parameters:
+    ///   - row: Row index
+    ///   - col: Column index
+    ///   - square: The square value to be compared
+    ///   - mask: A mask square to be applied before comparison.
+    /// - Returns: true if equal, otherwise false.
     private func _test(_ row: Int, _ col: Int, _ square: GameSquare, _ mask: GameSquare) -> Bool {
         assert(square >= GameSquare._start && square < GameSquare._end)
         
@@ -697,10 +754,27 @@ extension Game {
         return game[i, j].intersection(mask) == square
     }
     
+    /// Test if the neighbour square has a given value.
+    /// - Parameters:
+    ///   - row: Row index
+    ///   - col: Column index
+    ///   - square: The square value to be compared
+    ///   - mask: A mask square to be applied before comparison
+    ///   - dir: The direction in which to consider the neighbour
+    /// - Returns: true if equal, otherwise false.
     private func _testNeigh(_ row: Int, _ col: Int, _ square: GameSquare, _ mask: GameSquare, _ dir: GameDirection) -> Bool {
         return _test(row + dir.iOffset, col + dir.jOffset, square, mask)
     }
     
+    /// Test if a square can be found in the neighbourhood of another
+    ///
+    /// - Parameters:
+    ///   - row: Row index
+    ///   - col: Column index
+    ///   - square: The square value to look for
+    ///   - mask: A mask square to be applied before comparison
+    ///   - diag: Enable diagonal adjajency
+    /// - Returns: true if found, otherwise false.
     private func _neigh(_ row: UInt, _ col: UInt, _ square: GameSquare, _ mask: GameSquare, _ diag: Bool) -> Bool {
         assert(square >= GameSquare._start && square < GameSquare._end)
         
@@ -709,10 +783,26 @@ extension Game {
         return diag && (_testNeigh(Int(row), Int(col), square, mask, .upLeft) || _testNeigh(Int(row), Int(col), square, mask, .upRight) || _testNeigh(Int(row), Int(col), square, mask, .downLeft) || _testNeigh(Int(row), Int(col), square, mask, .downRight))
     }
     
+    /// Get the neighbourhood size.
+    ///
+    /// - Parameters:
+    ///   - row: Row index
+    ///   - col: Column index
+    ///   - diag: Enable diagonal adjacency
+    /// - Returns: The neighbourhood size
     private func _neighSize(_ row: UInt, _ col: UInt, _ diag: Bool) -> UInt {
         return _neighCount(row, col, .blank, .blank, diag)
     }
     
+    /// Tet the number of squares with a certain value in the neighbourhood of a given square
+    /// 
+    /// - Parameters:
+    ///   - row: Row index
+    ///   - col: Column index
+    ///   - square: The square value to look for
+    ///   - mask: A mask square to be applied before comparison
+    ///   - diag: Enable diagonal adjacency
+    /// - Returns: The number of square found
     private func _neighCount(_ row: UInt, _ col: UInt, _ square: GameSquare, _ mask: GameSquare, _ diag: Bool) -> UInt {
         var count: UInt = _testNeigh(Int(row), Int(col), square, mask, .up).uintValue + _testNeigh(Int(row), Int(col), square, mask, .down).uintValue + _testNeigh(Int(row), Int(col), square, mask, .left).uintValue + _testNeigh(Int(row), Int(col), square, mask, .right).uintValue
         

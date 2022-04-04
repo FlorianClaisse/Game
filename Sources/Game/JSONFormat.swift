@@ -23,10 +23,15 @@
  */
 
 
+/// Struct representation to containt json file format
 internal struct JSONFormat: Codable {
+    /// number of rows
     internal let rows: UInt
+    /// Number of columns
     internal let cols: UInt
+    /// Wrapping option
     internal let wrapping: Bool
+    /// Array of GameSquare convert in string
     internal let grid: [String]
     
     internal init(_ game: GameMember) {

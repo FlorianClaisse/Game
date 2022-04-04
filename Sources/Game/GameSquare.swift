@@ -17,8 +17,39 @@
 /// bitwise OR operator (|). For more details on bitwise operations, see [here](https://en.wikipedia.org/wiki/Bitwise_operations_in_C)
 public struct GameSquare: OptionSet {
     
+    /// The corresponding value of the raw type.
+    ///
+    /// A new instance initialized with `rawValue` will be equivalent to this
+    /// instance. For example:
+    ///
+    ///     enum PaperSize: String {
+    ///         case A4, A5, Letter, Legal
+    ///     }
+    ///
+    ///     let selectedSize = PaperSize.Letter
+    ///     print(selectedSize.rawValue)
+    ///     // Prints "Letter"
+    ///
+    ///     print(selectedSize == PaperSize(rawValue: selectedSize.rawValue)!)
+    ///     // Prints "true"
     public var rawValue: UInt
     
+    /// Creates a new option set from the given raw value.
+    ///
+    /// This initializer always succeeds, even if the value passed as `rawValue`
+    /// exceeds the static properties declared as part of the option set. This
+    /// example creates an instance of `ShippingOptions` with a raw value beyond
+    /// the highest element, with a bit mask that effectively contains all the
+    /// declared static members.
+    ///
+    ///     let extraOptions = ShippingOptions(rawValue: 255)
+    ///     print(extraOptions.isStrictSuperset(of: .all))
+    ///     // Prints "true"
+    ///
+    /// - Parameter rawValue: The raw value of the option set to create. Each bit
+    ///   of `rawValue` potentially represents an element of the option set,
+    ///   though raw values may include bits that are not defined as distinct
+    ///   values of the `OptionSet` type.
     public init(rawValue: UInt) {
         self.rawValue = rawValue
     }
@@ -68,15 +99,20 @@ public struct GameSquare: OptionSet {
     /// Square mask used in ``GameSquare``
     public static let squareMask = GameSquare(rawValue: 0xFF)
     
+    /// Start value of GameSquare
     internal static let _start: GameSquare = .blank
+    /// End value of GameSquare
     internal static let _end: GameSquare = .blacku
     
+    /// Get flags value.
     internal var flags: GameSquare { self.intersection(.flagMask) }
-    
+    /// Get state value.
     internal var state: GameSquare { self.intersection(.stateMask) }
-    
+    /// Get square value.
     internal var square: GameSquare { self.intersection(.squareMask) }
     
+    /// Check if a given ``GameSquare`` is correct or not.
+    /// - Returns: true if the value is correct, otherwise false.
     internal func _checkSquare() -> Bool {
         let state = self.intersection(.stateMask)
         let flags = self.intersection(.flagMask)
@@ -87,6 +123,8 @@ public struct GameSquare: OptionSet {
         return true
     }
     
+    /// Convert ``GameSquare`` to `String` value.
+    /// - Returns: The conresponding `String`, otherwise nil.
     internal func toString() -> String? {
         let state = self.intersection(.stateMask)
         let flags = self.intersection(.flagMask)
@@ -109,6 +147,17 @@ public struct GameSquare: OptionSet {
 }
 
 extension GameSquare: Comparable {
+    
+    /// Returns a Boolean value indicating whether the value of the first
+    /// argument is less than that of the second argument.
+    ///
+    /// This function is the only requirement of the `Comparable` protocol. The
+    /// remainder of the relational operator functions are implemented by the
+    /// standard library for any type that conforms to `Comparable`.
+    ///
+    /// - Parameters:
+    ///   - lhs: A value to compare.
+    ///   - rhs: Another value to compare.
     public static func < (lhs: GameSquare, rhs: GameSquare) -> Bool {
         return lhs.rawValue < rhs.rawValue
     }

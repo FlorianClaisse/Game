@@ -8,6 +8,9 @@
 
 internal extension String {
     
+    
+    /// Convert string value to a ``GameSquare``
+    /// - Returns: ``GameSquare`` value, otherwise nil.
     func toSquare() -> GameSquare? {
         switch self {
         case "b": return .blank

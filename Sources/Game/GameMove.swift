@@ -5,6 +5,9 @@
 //  Created by Florian Claisse on 28/01/2022.
 //
 
+/// Move structure.
+///
+/// This structure is used to save the game history.
 internal struct GameMove {
     internal let row: UInt
     internal let column: UInt
