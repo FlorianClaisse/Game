@@ -569,6 +569,10 @@ extension Game {
             
             Swift.print("Folder path : \(folderDirectory)")
 
+            for var url in directoryContents {
+                url.hasHiddenExtension = true
+            }
+            
             let json = directoryContents.filter(\.isJSON).map { $0.localizedName ?? $0.lastPathComponent }
             
             return json
