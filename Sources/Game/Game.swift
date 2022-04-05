@@ -557,6 +557,18 @@ extension Game {
         }
     }
     
+    /// Delete a file.
+    ///
+    /// - Parameter filename: The file to delete.
+    public static func delete(_ filename: String) {
+        let manager = FileManager.default
+        guard let url = manager.urls(for: .documentDirectory, in: .userDomainMask).first else { fatalError() }
+        
+        let folderDirectory = url.appendingPathComponent(folderName)
+        
+        try? manager.removeItem(at: folderDirectory.appendingPathComponent(filename + fileFormat))
+    }
+    
     
     public static func listOfFile() -> [String]? {
         do {
