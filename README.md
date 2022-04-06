@@ -1,6 +1,15 @@
 # Game
 
+## New functions
+
+```swift
+Game.delete(_ filename: String) -> Game
+Game.load(from bundel: Bundle, _ filename: String, withExtension ext: String?) -> Game
+Game.listOfFile() -> [String]?
+```
+
 ## File format
+
 ```json
  {
     "rows": 7,

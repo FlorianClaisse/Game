@@ -506,13 +506,13 @@ extension Game {
     }
     
     /// Creates a game by loading its description from a json file.
-    /// 
+    ///
     /// - Parameters:
     ///   - bundel: The Bundel to refer
     ///   - filename: Input file.
     ///   - ext: File extension
     /// - Returns: The loaded ``Game`` instance.
-    public static func load(from bundel: Bundle, _ filename: String, withExtension ext: String?) -> Game {
+    public static func load(from bundel: Bundle, _ filename: String, withExtension ext: String? = nil) -> Game {
         let format = bundel.decode(JSONFormat.self, from: filename, withExtension: ext)
         
         var game = self.init(format)
@@ -580,7 +580,7 @@ extension Game {
             let directoryContents = try FileManager.default.contentsOfDirectory(at: folderDirectory, includingPropertiesForKeys: nil)
             
             Swift.print("Folder path : \(folderDirectory)")
-
+            
             for var url in directoryContents {
                 url.hasHiddenExtension = true
             }
@@ -593,6 +593,73 @@ extension Game {
         }
         
         return nil
+    }
+    
+    /// Create a random game with a given size and number of walls.
+    ///
+    /// - Parameters:
+    ///   - rows: The number of rows of the game.
+    ///   - cols: The number of columns of the game.
+    ///   - wrapping: Wrapping option.
+    ///   - walls: The number of walls to add.
+    ///   - withSolution: if true, the game contains the solution, otherwise only walls.
+    /// - Returns: The generated random game.
+    public static func random(_ rows: UInt, _ cols: UInt, _ wrapping: Bool, _ walls: UInt, _ withSolution: Bool) -> Game {
+        assert(walls <= rows * cols)
+        
+        // step 0: create an empty game
+        var game = Self.newEmptyExt(rows, cols, wrapping)
+        
+        // step 1: add random black walls
+        var k: UInt = 0
+        while (k < walls) {
+            let i = UInt.random(in: 0 ..< rows)
+            let j = UInt.random(in: 0 ..< cols)
+            if (!game.isBlack(i, j)) {
+                game.setSquare(i, j, .blacku)
+                k += 1
+            }
+        }
+        game.updateFlags()
+        
+        // step 2: add lightbulbs until every squares are lighted
+        var nbUnlit = game.nbUnlitSquares()
+        while (nbUnlit != 0) {
+            let randomUnlitNum = UInt.random(in: 0 ..< nbUnlit)
+            var num: UInt = 0;
+            for i in game.rowRange {
+                for j in game.columnRange {
+                    if (!game.isLighted(i, j) && game.isBlank(i, j)) {
+                        if (num == randomUnlitNum) {
+                            game.setSquare(i, j, .lightbulb)
+                            game.updateFlags()
+                        }
+                        num += 1
+                    }
+                }
+                nbUnlit = game.nbUnlitSquares()
+            }
+        }
+        
+        // step 3 : set some black wall numbers
+        for i in game.rowRange {
+            for j in game.columnRange {
+                if game.isBlack(i, j) {
+                    if (arc4random() % 2 == 0) {
+                        let nbLightbulbs: UInt = game.nbNeighLightbulbs(i, j)
+                        let square = GameSquare(rawValue: GameSquare.black.rawValue + nbLightbulbs)
+                        Swift.print("rawValue :\(square.rawValue), nbLight :\(nbLightbulbs)")
+                        game.setSquare(i, j, square)
+                    }
+                }
+            }
+        }
+        
+        assert(game.isOver())
+        
+        if !withSolution { game.restart() }
+        
+        return game
     }
     
     /// Computes the solution of a given ``Game``
@@ -832,7 +899,7 @@ extension Game {
     }
     
     /// Tet the number of squares with a certain value in the neighbourhood of a given square
-    /// 
+    ///
     /// - Parameters:
     ///   - row: Row index
     ///   - col: Column index
@@ -887,5 +954,44 @@ extension Game {
             playMove(row, col, .blank)
         }
         _genAllSolution(pos + 1, len, &finish, &count, onlyOne)
+    }
+    
+    private func nbNeighLightbulbs(_ row: UInt, _ col: UInt) -> UInt {
+        let rows = numberOfRows
+        let cols = numberOfColumns
+        assert(row < rows)
+        assert(col < cols)
+        
+        var i_up: Int = Int(row) - 1
+        var i_down: Int = Int(row) + 1
+        var j_left: Int = Int(col) - 1
+        var j_right: Int = Int(col) + 1
+        
+        if isWrapping {
+            i_up = (i_up + Int(rows)) % Int(rows)
+            i_down = (i_down + Int(rows)) % Int(rows)
+            j_left = (j_left + Int(cols)) % Int(cols)
+            j_right = (j_right + Int(cols)) % Int(cols)
+        }
+        
+        var count: UInt = 0
+        if ((i_up >= 0) && isLightbulb(UInt(i_up), col)) { count += 1 }
+        if ((i_down < rows) && isLightbulb(UInt(i_down), col)) { count += 1 }
+        if ((j_left >= 0) && isLightbulb(row, UInt(j_left))) { count += 1 }
+        if ((j_right < cols) && isLightbulb(row, UInt(j_right))) { count += 1 }
+        
+        return count
+    }
+    
+    private func nbUnlitSquares() -> UInt {
+        var nb: UInt = 0
+        
+        for i in rowRange {
+            for j in columnRange {
+                if (!isLighted(i, j) && isBlank(i, j)) { nb += 1 }
+            }
+        }
+                
+      return nb
     }
 }
